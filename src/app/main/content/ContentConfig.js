@@ -8,7 +8,7 @@ export const ContentConfig = {
     },
     routes  : [
         {
-            path     : '/photographer/content',
+            path     : '/photographer/contents',
             component: Content
         }
     ]

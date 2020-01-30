@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import _ from '@lodash';
 import { withRouter } from 'react-router-dom';
+import translations from './../../../main/multiLan';
 const styles = theme => ({
     root: {
         background: 'radial-gradient(' + darken(theme.palette.primary.dark, 0.5) + ' 0%, ' + theme.palette.primary.dark + ' 80%)',
@@ -20,34 +21,16 @@ class LoginPage extends Component {
         email: '',
         password: '',
         remember: true,
-        IsAdmin: true,
     };
+    componentWillMount() {
+        var selectedLan = localStorage.getItem('language');
+        this.setState({ selectedLan: selectedLan });
+    }
     componentDidMount() {
-        localStorage.setItem('Islogged', false);
-
-        // localStorage.getItem('token');
-        // let token = localStorage.getItem('token') || ''
-        // var postData = {
-        //     user_id: 'userid'
-        //   };
-
-        //   let axiosConfig = {
-        //     headers: {
-        //         'Content-Type': 'application/x-www-form-urlencoded',
-        //         'x-pos-user-token': token,
-        //     }
-        //   };
-
-        //   axios.post('http://localhost:3000/files/', postData, axiosConfig)
-        //   .then((res) => {
-        //     console.log("RESPONSE RECEIVED: ", res);
-        //   })
-        //   .catch((err) => {
-        //     console.log("AXIOS ERROR: ", err);
-        //   })
-
     };
-
+    getTranslation = (lang, text) => {
+        return translations[lang][text];
+    }
 
     handleChange = (event) => {
         this.setState(_.set({ ...this.state }, event.target.name, event.target.type === 'checkbox' ? event.target.checked : event.target.value));
@@ -60,8 +43,8 @@ class LoginPage extends Component {
         );
     }
     onLogin = () => {
-        localStorage.setItem('Islogged', true);
-        axios.post(`http://localhost:3000/users/adminlogin`, { email: this.state.email, password: this.state.password })
+
+        axios.post(`http://165.227.81.153:3005/users/adminlogin`, { email: this.state.email, password: this.state.password })
             .then(res => {
                 if (res.data.data.token !== undefined) {
                     localStorage.setItem('token', res.data.data.token);
@@ -75,7 +58,7 @@ class LoginPage extends Component {
         const { email, password } = this.state;
 
         return (
-            <div className={classNames(classes.root, "flex flex-col flex-auto flex-no-shrink items-center justify-center p-32")}>
+            <div className={classNames(classes.root, "flex flex-col flex-auto flex-no-shrink items-center justify-center p-32")} dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}>
 
                 <div className="flex flex-col items-center justify-center w-full">
 
@@ -88,13 +71,19 @@ class LoginPage extends Component {
 
                                 {/* <img className="w-128 m-32" src="assets/images/logos/fuse.svg" alt="logo" /> */}
 
-                                <Typography variant="h6" className="mt-16 mb-32">LOGIN TO YOUR ACCOUNT</Typography>
+                                <Typography variant="h6" className="mt-16 mb-32">
+                                    {
+                                        translations[this.state.selectedLan]['_LOGIN_TO_YOUR_ACCOUNT']
+                                    }
+                                </Typography>
 
                                 <form name="loginForm" noValidate className="flex flex-col justify-center w-full">
 
                                     <TextField
                                         className="mb-16"
-                                        label="Email"
+                                        label={
+                                            translations[this.state.selectedLan]['_EMAIL']
+                                        }
                                         autoFocus
                                         type="email"
                                         name="email"
@@ -107,7 +96,9 @@ class LoginPage extends Component {
 
                                     <TextField
                                         className="mb-16"
-                                        label="Password"
+                                        label={
+                                            translations[this.state.selectedLan]['_PASSWORD']
+                                        }
                                         type="password"
                                         name="password"
                                         value={password}
@@ -116,55 +107,22 @@ class LoginPage extends Component {
                                         required
                                         fullWidth
                                     />
-
-                                    {/* <div className="flex items-center justify-between">
-
-                                        <FormControl>
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        name="remember"
-                                                        checked={remember}
-                                                        onChange={this.handleChange}/>
-                                                }
-                                                label="Remember Me"
-                                            />
-                                        </FormControl>
-
-                                        <Link className="font-medium" to="/pages/auth/forgot-password">
-                                            Forgot Password?
-                                        </Link>
-                                    </div> */}
-                                    {this.state.IsAdmin === false && <h4 style={{ color: 'red', fontSize: 16, textAlign: 'center' }}>Login with admin</h4>}
                                     <Button variant="contained" color="primary" className="w-224 mx-auto mt-16" aria-label="LOG IN"
                                         disabled={!this.canBeSubmitted()} onClick={this.onLogin.bind(this)}>
-                                        LOGIN
+                                        {
+                                            translations[this.state.selectedLan]['_LOGIN']
+                                        }
                                     </Button>
-
                                 </form>
-
-                                {/* <div className="my-24 flex items-center justify-center">
-                                    <Divider className="w-32"/>
-                                    <span className="mx-8 font-bold">OR</span>
-                                    <Divider className="w-32"/>
-                                </div> */}
-
-                                {/* <Button variant="contained" color="secondary" size="small"
-                                        className="normal-case w-192 mb-8">
-                                    Log in with Google
-                                </Button>
-
-                                <Button variant="contained" color="primary" size="small"
-                                        className="normal-case w-192">
-                                    Log in with Facebook
-                                </Button> */}
 
                                 <div className="flex flex-col items-center justify-center pt-32 pb-24">
                                     <span className="font-medium">Don't have an account?</span>
-                                    <Link className="font-medium" to="/photographer/register">Create an account</Link>
-                                    {/* <Link className="font-medium" to="/register">Create an account</Link> */}
+                                    <Link className="font-medium" to="/photographer/register">
+                                        {
+                                            translations[this.state.selectedLan]['_CREATE_AN_ACCOUNT']
+                                        }
+                                    </Link>
                                 </div>
-
                             </CardContent>
                         </Card>
                     </FuseAnimate>

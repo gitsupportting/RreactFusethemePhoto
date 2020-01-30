@@ -7,6 +7,7 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogTitle from '@material-ui/core/DialogTitle';
 // import TablePagination from '@material-ui/core/TablePagination';
 import { withRouter } from 'react-router-dom';
+import translations from './../../main/multiLan';
 import axios from 'axios'
 import './tableStyle.css'
 import _ from '@lodash';
@@ -50,6 +51,10 @@ class Gallery extends Component {
         this.editClose = this.editClose.bind(this);
         this.editOpen = this.editOpen.bind(this);
     }
+    componentWillMount() {
+        var selectedLan = localStorage.getItem('language');
+        this.setState({ selectedLan: selectedLan });
+    }
     componentDidMount() {
         user_id = localStorage.getItem('user_id') || ''
         user_name = localStorage.getItem('user_name') || ''
@@ -62,7 +67,7 @@ class Gallery extends Component {
             'Content-Type': 'application/json',
             'x-pos-user-token': token
         }
-        axios.post(`http://localhost:3000/getdata/galleries`, { user_id: user_id, }, { headers: headers })
+        axios.post(`http://165.227.81.153:3005/getdata/galleries`, { user_id: user_id, }, { headers: headers })
             .then(res => {
                 if (res.data === 'Invalid token') {
                     let path = `/photographer/login`;
@@ -103,7 +108,7 @@ class Gallery extends Component {
                 break;
             }
         }
-        const url = 'http://localhost:3000/getdata/deleteFolder';
+        const url = 'http://165.227.81.153:3005/getdata/deleteFolder';
         token = localStorage.getItem('token') || ''
         const headers = {
             'Content-Type': 'application/json',
@@ -149,7 +154,7 @@ class Gallery extends Component {
         this.setState({
             EditGalleryName: EditGalleryName,
         }, () => {
-            const url = 'http://localhost:3000/getdata/editGallery';
+            const url = 'http://165.227.81.153:3005/getdata/editGallery';
             token = localStorage.getItem('token') || ''
             const headers = {
                 'Content-Type': 'application/json',
@@ -188,13 +193,13 @@ class Gallery extends Component {
             'x-pos-user-token': token
         }
         if (this.state.AddGalleryName !== '') {
-            axios.post(`http://localhost:3000/getdata/addGalleries`, { GalleryName: this.state.AddGalleryName, user_id: user_id, }, { headers: headers })
+            axios.post(`http://165.227.81.153:3005/getdata/addGalleries`, { GalleryName: this.state.AddGalleryName, user_id: user_id, }, { headers: headers })
                 .then(res => {
                     if (res.data === 'Invalid token') {
                         let path = `/photographer/login`;
                         this.props.history.push(path);
                     }
-                    axios.post(`http://localhost:3000/getdata/galleries`, { user_id: user_id, }, { headers: headers })
+                    axios.post(`http://165.227.81.153:3005/getdata/galleries`, { user_id: user_id, }, { headers: headers })
                         .then(ress => {
                             var GalleryNames_temp = ress.data;
                             var GalleryNames = [];
@@ -237,12 +242,12 @@ class Gallery extends Component {
                     <tr key={index}>
                         <td>{no}</td>
                         <td>{GalleryName}</td>
-                        <td><Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onUserImages(e, GalleryName)}>View</Button></td>
+                <td><Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onUserImages(e, GalleryName)}>{translations[this.state.selectedLan]['_VIEW']}</Button></td>
                         <td>
-                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.handleClickOpen(e, GalleryName)}>Delete</Button>
+                <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.handleClickOpen(e, GalleryName)}>{translations[this.state.selectedLan]['_DELETE']}</Button>
                         </td>
                         <td>
-                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.editClickOpen(e, GalleryName)}>Edit</Button>
+                <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.editClickOpen(e, GalleryName)}>{translations[this.state.selectedLan]['_EDIT']}</Button>
                         </td>
                     </tr>
                 )
@@ -319,13 +324,13 @@ class Gallery extends Component {
                 //     <h4>{this.state.user_name}</h4>
                 //     }
                 content={
-                    <div className="p-24">
+                    <div className="p-24" dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}>
                         <h1 style={{ textAlign: 'center' }}>{user_name}</h1>
-                        <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onUsers(e)}><span style={{ color: 'blue', fontSize:20 }}>Users</span></Button>
+                        <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onUsers(e)}><span style={{ color: 'blue', fontSize: 20 }}>{translations[this.state.selectedLan]['_USERS']}</span></Button>
                         <br />
-                        <div style={{ marginTop: 15, textAlign:'right' }}>
+                        <div style={{ marginTop: 15, textAlign: 'right' }}>
                             <TextField
-                                label="GalleryName"
+                                label={translations[this.state.selectedLan]['_GALLERY_NAME']}
                                 autoFocus
                                 name="AddGalleryName"
                                 value={this.state.AddGalleryName}
@@ -336,19 +341,19 @@ class Gallery extends Component {
                             />
                             <Button variant="contained" color="primary" className="w-224 mx-auto mt-16" aria-label="LOG IN"
                                 onClick={(e) => this.onAddGalleries(e, user_id)} style={{ marginLeft: 20, marginRight: 20 }}>
-                                Add Gallery
-                                </Button>
+                                {translations[this.state.selectedLan]['_ADD_GALLERY']}
+                            </Button>
                         </div>
                         <br />
                         <div>
                             <table id='usersDatas'>
                                 {(this.state.usersDatas !== []) && <tbody>
                                     <tr>
-                                        <th>No</th>
-                                        <th>GalleryName</th>
-                                        <th>View</th>
-                                        <th>Edit Gallery</th>
-                                        <th>Delete Gallery</th>
+                                        <th>{translations[this.state.selectedLan]['_NO']}</th>
+                                        <th>{translations[this.state.selectedLan]['_GALLERY_NAME']}</th>
+                                        <th>{translations[this.state.selectedLan]['_VIEW']}</th>
+                                        <th>{translations[this.state.selectedLan]['_EDIT_GALLERY']}</th>
+                                        <th>{translations[this.state.selectedLan]['_DELETE_GALLERY']}</th>
                                     </tr>
                                     {this.renderTableData()}
                                 </tbody>}
@@ -373,14 +378,15 @@ class Gallery extends Component {
                             onClose={this.handleClose}
                             aria-labelledby="alert-dialog-title"
                             aria-describedby="alert-dialog-description"
+                            dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}
                         >
-                            <DialogTitle id="alert-dialog-title">{"Are you sure want to delete this gallery?"}</DialogTitle>
+                            <DialogTitle id="alert-dialog-title">{translations[this.state.selectedLan]['GALLERY_MODAL_DELETE']}</DialogTitle>
                             <DialogActions>
                                 <Button onClick={this.handleClose} color="primary">
-                                    Disagree
+                                    {translations[this.state.selectedLan]['_DISAGREE']}
                                 </Button>
                                 <Button onClick={this.handleOpen} color="primary" autoFocus>
-                                    Agree
+                                    {translations[this.state.selectedLan]['_AGREE']}
                                 </Button>
                             </DialogActions>
                         </Dialog>
@@ -389,11 +395,12 @@ class Gallery extends Component {
                             onClose={this.editClose}
                             aria-labelledby="alert-dialog-title"
                             aria-describedby="alert-dialog-description"
+                            dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}
                         >
-                            <DialogTitle id="alert-dialog-title">{"Are you going to edit gallery name?"}</DialogTitle>
+                            <DialogTitle id="alert-dialog-title">{translations[this.state.selectedLan]['GALLERY_MODAL_EDIT']}</DialogTitle>
                             <DialogContent classes={{ root: "p-16 pb-0 sm:p-24 sm:pb-0" }}>
                                 <TextField
-                                    label="GalleryName"
+                                    label={translations[this.state.selectedLan]['_GALLERY_NAME']}
                                     autoFocus
                                     name="EditGalleryName"
                                     value={this.state.EditGalleryName}
@@ -405,10 +412,10 @@ class Gallery extends Component {
                             </DialogContent>
                             <DialogActions>
                                 <Button onClick={this.editClose} color="primary">
-                                    Disagree
+                                {translations[this.state.selectedLan]['_DISAGREE']}
                                 </Button>
                                 <Button onClick={(event) => this.editOpen(event, this.state.EditGalleryName)} color="primary" autoFocus>
-                                    Agree
+                                {translations[this.state.selectedLan]['_AGREE']}
                                 </Button>
                             </DialogActions>
                         </Dialog>

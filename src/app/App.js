@@ -11,7 +11,7 @@ import {Auth} from './auth';
 import store from './store';
 import AppContext from './AppContext';
 import routes from './fuse-configs/routesConfig';
-
+// import 'bootstrap/dist/css/bootstrap.min.css';
 const jss = create({
     ...jssPreset(),
     plugins: [...jssPreset().plugins, jssExtend()]

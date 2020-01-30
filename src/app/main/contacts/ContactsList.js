@@ -11,6 +11,7 @@ import axios from 'axios'
 import './tableStyle.css'
 // import Popup from "reactjs-popup";
 import _ from '@lodash';
+import translations from './../../main/multiLan';
 
 let token;
 class ContactsList extends Component {
@@ -25,7 +26,6 @@ class ContactsList extends Component {
             loading: false,
             imageFile: null,
             imageFileName: '',
-            Islogged: false,
             show: false,
             openModal: false,
             deleteopenModal: false,
@@ -41,8 +41,12 @@ class ContactsList extends Component {
         this.deleteOpen = this.deleteOpen.bind(this);
         this.getUsers = this.getUsers.bind(this);
     }
+    componentWillMount() {
+        var selectedLan = localStorage.getItem('language');
+        this.setState({ selectedLan: selectedLan });
+    }
     componentDidMount() {
-        token = localStorage.getItem('token') || ''
+        token = localStorage.getItem('token') || '';
         this.getUsers();
     }
     getUsers() {
@@ -50,7 +54,7 @@ class ContactsList extends Component {
             'Content-Type': 'application/json',
             'x-pos-user-token': token
         }
-        axios.get(`http://localhost:3000/getdata/users`, { headers: headers })
+        axios.get(`http://165.227.81.153:3005/getdata/users`, { headers: headers })
             .then(res => {
                 if (res.data === 'Invalid token') {
                     let path = `/photographer/login`;
@@ -99,7 +103,7 @@ class ContactsList extends Component {
             'Content-Type': 'application/json',
             'x-pos-user-token': token
         }
-        axios.post(`http://localhost:3000/getdata/addExpirationdays`, { user_id: this.state.user_id, ExpirationDays: this.state.ExpirationDays, userCode: userCode, startDate: startDate }, { headers: headers })
+        axios.post(`http://165.227.81.153:3005/getdata/addExpirationdays`, { user_id: this.state.user_id, ExpirationDays: this.state.ExpirationDays, userCode: userCode, startDate: startDate }, { headers: headers })
             .then(res => {
                 if (res.data === 'Invalid token') {
                     let path = `/photographer/login`;
@@ -131,13 +135,13 @@ class ContactsList extends Component {
             'Content-Type': 'application/json',
             'x-pos-user-token': token
         }
-        axios.post(`http://localhost:3000/getdata/deleteUser`, { user_id: this.state.user_id }, { headers: headers })
+        axios.post(`http://165.227.81.153:3005/getdata/deleteUser`, { user_id: this.state.user_id }, { headers: headers })
             .then(res => {
                 if (res.data === 'Invalid token') {
                     let path = `/photographer/login`;
                     this.props.history.push(path);
                 }
-                axios.get(`http://localhost:3000/getdata/users`, { headers: headers })
+                axios.get(`http://165.227.81.153:3005/getdata/users`, { headers: headers })
                     .then(res => {
                         var usersDatas_temp = res.data;
                         var usersDatas = [];
@@ -160,7 +164,6 @@ class ContactsList extends Component {
     onUserImages(e, user_id, user_name) {
         localStorage.setItem('user_id', user_id);
         localStorage.setItem('user_name', user_name);
-        localStorage.setItem('Islogged', true);
         let path = `/photographer/galleries`;
         this.props.history.push(path);
     };
@@ -193,13 +196,13 @@ class ContactsList extends Component {
                             </div>
                         </td> */}
                         <td>
-                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onUserImages(e, user_id, name)}>View</Button>
+                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onUserImages(e, user_id, name)}>{translations[this.state.selectedLan]['_VIEW']}</Button>
                         </td>
                         <td>
-                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.handleClickOpen(e, user_id)}>Generate</Button>
+                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.handleClickOpen(e, user_id)}>{translations[this.state.selectedLan]['_GENERATE']}</Button>
                         </td>
                         <td>
-                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.deleteClickOpen(e, user_id)}>Delete</Button>
+                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.deleteClickOpen(e, user_id)}>{translations[this.state.selectedLan]['_DELETE']}</Button>
                         </td>
                     </tr>
                 )
@@ -209,19 +212,19 @@ class ContactsList extends Component {
 
     render() {
         return (
-            <div className="App">
+            <div className="App" dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}>
                 <table id='usersDatas'>
                     {(this.state.usersDatas !== []) && <tbody>
                         <tr>
-                            <th>NO</th>
-                            <th>NAME</th>
-                            <th>EMAIL</th>
-                            <th>StartDate</th>
-                            <th>Duration</th>
-                            <th>Code</th>
-                            <th>Galeries</th>
-                            <th>Generate</th>
-                            <th>Delete</th>
+                            <th>{translations[this.state.selectedLan]['_NO']}</th>
+                            <th>{translations[this.state.selectedLan]['_NAME']}</th>
+                            <th>{translations[this.state.selectedLan]['_EMAIL']}</th>
+                            <th>{translations[this.state.selectedLan]['_START_DATE']}</th>
+                            <th>{translations[this.state.selectedLan]['_DURATION']}</th>
+                            <th>{translations[this.state.selectedLan]['_CODE']}</th>
+                            <th>{translations[this.state.selectedLan]['_GALLERIES']}</th>
+                            <th>{translations[this.state.selectedLan]['_GENERATE']}</th>
+                            <th>{translations[this.state.selectedLan]['_DELETE']}</th>
                         </tr>
                         {this.renderTableData()}
                     </tbody>}
@@ -231,10 +234,11 @@ class ContactsList extends Component {
                     onClose={this.handleClose}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
+                    dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}
                 >
-                    <DialogTitle id="alert-dialog-title">{"Please set expiratin days"}</DialogTitle>
+                    <DialogTitle id="alert-dialog-title">{translations[this.state.selectedLan]['_USERS_ADD_EXPIRATION_DATE']}</DialogTitle>
                     <TextField
-                        label="Expiration Days"
+                        label={translations[this.state.selectedLan]['_USERS_EXPIRATION_DATE']}
                         autoFocus
                         name="ExpirationDays"
                         value={this.state.ExpirationDays}
@@ -245,11 +249,11 @@ class ContactsList extends Component {
                     />
                     <DialogActions>
                         <Button onClick={this.handleClose} color="primary">
-                            Disagree
-                    </Button>
+                            {translations[this.state.selectedLan]['_DISAGREE']}
+                        </Button>
                         <Button onClick={this.handleOpen} color="primary" autoFocus>
-                            Agree
-                    </Button>
+                            {translations[this.state.selectedLan]['_AGREE']}
+                        </Button>
                     </DialogActions>
                 </Dialog>
 
@@ -258,15 +262,16 @@ class ContactsList extends Component {
                     onClose={this.deleteClose}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
+                    dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}
                 >
-                    <DialogTitle id="alert-dialog-title">{"Are you sure to delete this user?"}</DialogTitle>
+                    <DialogTitle id="alert-dialog-title">{translations[this.state.selectedLan]['_DELETE_USER']}</DialogTitle>
                     <DialogActions>
                         <Button onClick={this.deleteClose} color="primary">
-                            Disagree
-                    </Button>
+                            {translations[this.state.selectedLan]['_DISAGREE']}
+                        </Button>
                         <Button onClick={this.deleteOpen} color="primary" autoFocus>
-                            Agree
-                    </Button>
+                            {translations[this.state.selectedLan]['_AGREE']}
+                        </Button>
                     </DialogActions>
                 </Dialog>
             </div>

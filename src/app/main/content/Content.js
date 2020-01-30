@@ -1,19 +1,27 @@
-import React, { Component } from './node_modules/react';
-import { withStyles } from './node_modules/@material-ui/core/styles';
-import { FusePageSimple } from './node_modules/@fuse';
-import { Button } from './node_modules/@material-ui/core';
-import Dialog from './node_modules/@material-ui/core/Dialog';
-import DialogActions from './node_modules/@material-ui/core/DialogActions';
-import DialogTitle from './node_modules/@material-ui/core/DialogTitle';
-import TablePagination from './node_modules/@material-ui/core/TablePagination';
-import CircularProgress from './node_modules/@material-ui/core/CircularProgress';
-import { withRouter } from './node_modules/react-router-dom';
-import axios from './node_modules/axios'
+import React, { Component } from 'react';
+import { withStyles } from '@material-ui/core/styles';
+import { FusePageSimple } from '@fuse';
+import { TextField, Button } from '@material-ui/core';
+import Input from '@material-ui/core/Input';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import TablePagination from '@material-ui/core/TablePagination';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import InputLabel from '@material-ui/core/InputLabel';
+import FormControl from '@material-ui/core/FormControl';
+import Select from '@material-ui/core/Select';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import 'react-quill/dist/quill.bubble.css';
+import { withRouter } from 'react-router-dom';
+import _ from '@lodash';
+import axios from 'axios'
 import './tableStyle.css'
-
+import translations from './../../main/multiLan';
 let token;
-var user_id, user_name;
-var GalleryName, gallery_id;
+
+
 const styles = theme => ({
     root: {
         width: '100%',
@@ -23,20 +31,49 @@ const styles = theme => ({
     nested: {
         paddingLeft: theme.spacing.unit * 4,
     },
+    // paper: {
+    //     // padding: theme.spacing(2),
+    //     // textAlign: 'center',
+    //     // color: theme.palette.text.secondary,
+    //     // backgroundColor:'#fafafa',
+    //     background:'#fafafa',
+    //     backgroundColor:'red'
+    // },
 });
 class Content extends Component {
     constructor(props) {
-        super(props)
+        super(props);
+        this.modules = {
+            toolbar: [
+                [{ 'font': [] }],
+                [{ 'size': ['small', false, 'large', 'huge'] }],
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                [{ 'align': [] }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['clean']
+            ]
+        };
+
+        this.formats = [
+            'font',
+            'size',
+            'bold', 'italic', 'underline',
+            'list', 'bullet',
+            'align',
+            'color', 'background'
+        ];
         this.state = {
             selectedContactsMenu: null,
             data: null,
             fullscreen: false,
             loading: false,
-            imageFile: null,
-            imageFileName: '',
+            mainImageFile: null,
+            tempFile: null,
+            mainImage: '',
             Islogged: false,
             imagesources: [],
-            imagesourcesTotal: [],
+            articleDataTotal: [],
             AddGalleryName: '',
             GalleryNames: [],
             GalleryIds: [],
@@ -45,71 +82,88 @@ class Content extends Component {
             currentPage: 0,
             totalElements: 10,
             openModal: false,
+            editArticle: false,
+            openModalDeleteArticle: false,
+            article_id: '',
             open: true,
             isUploaded: true,
+            content: '',
+            status_b: 0,
+            sticky: 0,
+
         }
-        // this.uploadBtn = React.createRef();
-        //
+
         this.openFileDg = this.openFileDg.bind(this);
         this.onChangeFile = this.onChangeFile.bind(this);
-        this.handleClickOpen = this.handleClickOpen.bind(this);
         this.handleClose = this.handleClose.bind(this);
         this.handleOpen = this.handleOpen.bind(this);
+        this.editClose = this.editClose.bind(this);
+        this.editOpen = this.editOpen.bind(this);
+        this.deleteClose = this.deleteClose.bind(this);
+        this.deleteOpen = this.deleteOpen.bind(this);
+        this.rteChange = this.rteChange.bind(this);
+    }
+    onChangeInput = (event) => {
+        this.setState(_.set({ ...this.state }, event.target.name, event.target.type === 'checkbox' ? event.target.checked : event.target.value));
+        console.log(this.state.dateTime);
+        console.log('aaa');
+    };
+    rteChange = (content, delta, source, editor) => {
+        // console.log(editor.getHTML()); // HTML/rich text
+        this.setState({ content: editor.getHTML() })
+        // console.log(editor.getText()); // plain text
+        // console.log(editor.getLength()); // number of characters
+    }
+    componentWillMount() {
+        var selectedLan = localStorage.getItem('language');
+        this.setState({ selectedLan: selectedLan });
     }
     componentDidMount() {
-        user_id = localStorage.getItem('user_id') || ''
-        user_name = localStorage.getItem('user_name') || ''
-        GalleryName = localStorage.getItem('GalleryName') || ''
-        gallery_id = localStorage.getItem('gallery_id') || ''
-        this.setState({
-            GalleryName: GalleryName,
-            gallery_id: gallery_id,
-            user_name: user_name,
-        })
+
         token = localStorage.getItem('token') || ''
-        this.uploadImage();
+        this.getArticleAll();
+        this.getCurrentDate();
+        // setTimeout(() => {
+        //     window.location.reload();
+        // }, 10);
     }
 
-
-    uploadImage() {
+    getCurrentDate = () => {
+        var today = new Date();
+        var dd = String(today.getDate()).padStart(2, '0');
+        var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+        var yyyy = today.getFullYear();
+        today = yyyy + '-' + mm + '-' + dd;
+        this.setState({
+            dateTime: today,
+        })
+    }
+    getArticleAll() {
         const options = {
             headers: {
                 'x-pos-user-token': token,
                 'Content-Type': 'application/x-www-form-urlencoded'
             }
         };
-        const url = `http://localhost:3000/files/images`
+        const url = `http://165.227.81.153:3005/getdata/articles`
         axios.get(
             url,
             options
         )
             .then(res => {
-                var usersDatas = res.data;
-                if (usersDatas.length > 0) {
-                    var imagesource_temp = [];
-                    let j = 0;
-                    for (let i = 0; i < usersDatas.length; i++) {
-                        if ((usersDatas[i].user_id === user_id) && (usersDatas[i].gallery_id === this.state.gallery_id)) {
-                            imagesource_temp[j] = usersDatas[i].filename;
-                            j = j + 1;
-                        }
-                    }
-                    console.log(user_id);
-                    console.log(this.state.gallery_id)
-                    console.log(imagesource_temp);
-                    if (imagesource_temp.length > 0) {
-                        this.setState({
-                            imagesourcesTotal: imagesource_temp,
-                            totalElements: imagesource_temp.length,
-                        });
-                    } else {
-                        this.setState({
-                            imagesourcesTotal: [],
-                        })
-                    }
+                if (res.data === 'Invalid token') {
+                    let path = `/photographer/login`;
+                    this.props.history.push(path);
+                }
+                var articleData = res.data;
+                if (articleData.length > 0) {
+                    this.setState({
+                        articleDataTotal: articleData,
+                        totalElements: articleData.length,
+                    });
                 } else {
                     this.setState({
-                        imagesourcesTotal: []
+                        articleDataTotal: [],
                     })
                 }
                 this.setState({
@@ -117,7 +171,7 @@ class Content extends Component {
                 })
             })
         setTimeout(() => {
-            this.getImageSources();
+            this.getArticleSources();
         }, 2000);
     }
 
@@ -125,19 +179,29 @@ class Content extends Component {
         this.uploadBtn.click();
     }
 
-    onChangeFile(e, user_id) {
+    onChangeFile(e) {
+        let mainImageFile = e.target.files[0];
+        let mainImage = e.target.files[0].name;
         this.setState({
-            isUploaded: false,
+            tempFile: URL.createObjectURL(e.target.files[0]),
+            mainImage: mainImage,
+            mainImageFile: mainImageFile
         })
+    }
+    openFileDgArticle(e, article_id) {
+        this.setState({
+            article_id: article_id,
+        })
+        this.uploadBtnArticle.click();
+    }
+    onChangeFileArticle(e) {
         for (let i = 0; i < (e.target.files).length; i++) {
             let imageFile = e.target.files[i];
             let imageFileName = e.target.files[i].name;
             let formdata = new FormData();
-            formdata.set('user_id', user_id);
-            formdata.set('GalleryName', this.state.GalleryName);
-            formdata.set('gallery_id', this.state.gallery_id);
+            formdata.set('article_id', this.state.article_id);
             formdata.append('file', imageFile);
-            const url = 'http://localhost:3000/files/' + imageFileName;
+            const url = 'http://165.227.81.153:3005/files/otherarticleimg/' + imageFileName;
             const options = {
                 headers: {
                     'x-pos-user-token': token,
@@ -150,14 +214,16 @@ class Content extends Component {
                 options
             )
                 .then((response) => {
-                    this.uploadImage();
+                    if (response.data === 'Invalid token') {
+                        let path = `/photographer/login`;
+                        this.props.history.push(path);
+                    }
                 })
         }
     }
-
-    handleClickOpen(e, imagesource) {
+    handleClickOpen(e, articleData) {
         this.setState({
-            imagesource: imagesource,
+            articleData: articleData,
             openModal: true
         });
     };
@@ -167,21 +233,70 @@ class Content extends Component {
             openModal: false
         });
     };
+
     handleOpen() {
-        const url = 'http://localhost:3000/getdata/deleteImage';
+        console.log(this.state.status_b);
+        let formdata = new FormData();
+        formdata.set('title', this.state.title);
+        formdata.set('content', this.state.content);
+        formdata.set('status_b', this.state.status_b);
+        formdata.set('sticky', this.state.sticky);
+        formdata.set('dateTime', this.state.dateTime);
+        formdata.set('mainImage', this.state.mainImage);
+        formdata.append('file', this.state.mainImageFile);
+        const url = 'http://165.227.81.153:3005/getdata/addarticle/' + this.state.mainImage;
+        const options = {
+            headers: {
+                'x-pos-user-token': token,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        };
+        axios.post(
+            url,
+            formdata,
+            options
+        )
+            .then((response) => {
+                this.getArticleAll()
+                this.setState({
+                    openModal: false,
+                    title: '',
+                    content: '',
+                    status_b: false,
+                    sticky: false,
+                    dateTime: this.state.dateTime,
+                    mainImage: '',
+                    mainImageFile: null,
+                    tempFile: null,
+                });
+            })
+    };
+    deleteClickOpen(e, imagesource) {
+        this.setState({
+            imagesource: imagesource,
+            openModalDeleteArticle: true
+        });
+    };
+    deleteClose() {
+        this.setState({
+            openModalDeleteArticle: false
+        });
+    };
+    deleteOpen() {
+        const { imagesource } = this.state;
+        var article_id = imagesource.article_id;
+        var mainImage = imagesource.mainImage;
+        const url = 'http://165.227.81.153:3005/getdata/deleteArticle';
         token = localStorage.getItem('token') || ''
         const headers = {
             'Content-Type': 'application/json',
             'x-pos-user-token': token
         }
-        const { imagesource } = this.state;
         axios.post(
             url,
             {
-                user_id: user_id,
-                GalleryName: this.state.GalleryName,
-                gallery_id: this.state.gallery_id,
-                filename: imagesource,
+                article_id: article_id,
+                filename: mainImage,
             },
             { headers: headers }
         )
@@ -190,17 +305,84 @@ class Content extends Component {
                     let path = `/photographer/login`;
                     this.props.history.push(path);
                 }
-                this.uploadImage();
+                this.getArticleAll();
             })
 
         this.setState({
-            openModal: false
+            openModalDeleteArticle: false
+        });
+    };
+    editClickOpen(e, imagesource) {
+        this.setState({
+            article_id: imagesource.article_id,
+            title: imagesource.title,
+            content: imagesource.content,
+            status_b: imagesource.status_b,
+            sticky: imagesource.sticky,
+            dateTime: imagesource.dateTime,
+            mainImage: imagesource.mainImage,
+            editArticle: true,
+            openModal: false,
+        });
+    };
+    editClose() {
+        this.setState({
+            editArticle: false
         });
     };
 
+    editOpen() {
+        let formdata = new FormData();
+        formdata.set('article_id', this.state.article_id);
+        formdata.set('title', this.state.title);
+        formdata.set('content', this.state.content);
+        formdata.set('status_b', this.state.status_b);
+        formdata.set('sticky', this.state.sticky);
+        formdata.set('dateTime', this.state.dateTime);
+        formdata.set('mainImage', this.state.mainImage);
+        formdata.append('file', this.state.mainImageFile);
 
+        const url = 'http://165.227.81.153:3005/getdata/editarticle/' + this.state.mainImage;
+        const options = {
+            headers: {
+                'x-pos-user-token': token,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        };
+        axios.post(
+            url,
+            formdata,
+            options
+        )
+            .then((response) => {
+                this.getArticleAll()
+                this.setState({
+                    editArticle: false,
+                    title: '',
+                    content: '',
+                    status_b: false,
+                    sticky: false,
+                    dateTime: this.state.dateTime,
+                    mainImage: '',
+                    mainImageFile: null,
+                    tempfile: null,
+                });
+            })
+    };
+    addImagesClickOpen(e, imagesource) {
+        this.setState({
+            article_id: imagesource.article_id,
+        }, () => {
+            console.log(this.state.article_id);
+        })
+    }
+    viewImagesClickOpen(e, imagesource) {
+        localStorage.setItem('article_id', imagesource.article_id);
+        localStorage.setItem('title', imagesource.title);
+        let path = `/photographer/content/images`;
+        this.props.history.push(path);
+    }
     renderTableData() {
-
         if (this.state.imagesources !== []) {
             var no = (this.state.currentPage) * (this.state.rowsPerPage);
             return this.state.imagesources.map((imagesource, index) => {
@@ -208,16 +390,35 @@ class Content extends Component {
                 return (
                     <tr key={index}>
                         <td>{no}</td>
-                        <td>{imagesource}</td>
+                        <td>{imagesource.title}</td>
+                        <td>{imagesource.status_b}</td>
+                        <td>{imagesource.sticky}</td>
+                        <td>{imagesource.dateTime}</td>
                         <td>
                             <img
-                                src={"http://localhost:3000/uploads/" + user_id + '/' + this.state.gallery_id + '/' + imagesource}
+                                src={"http://165.227.81.153:3005/uploads/articles/" + imagesource.article_id + '/' + imagesource.mainImage}
                                 alt="new"
                                 height="42" width="42"
                             />
                         </td>
                         <td>
-                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.handleClickOpen(e, imagesource)}>Delete</Button>
+                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.openFileDgArticle(e, imagesource.article_id)}>{translations[this.state.selectedLan]['_ADD_IMAGES']}</Button>
+                            <input id="myInput"
+                                type="file"
+                                ref={(ref) => this.uploadBtnArticle = ref}
+                                multiple
+                                style={{ display: 'none' }}
+                                onChange={(e) => this.onChangeFileArticle(e, imagesource.article_id)}
+                            />
+                        </td>
+                        <td>
+                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.viewImagesClickOpen(e, imagesource)}>{translations[this.state.selectedLan]['_VIEW']}</Button>
+                        </td>
+                        <td>
+                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.editClickOpen(e, imagesource)}>{translations[this.state.selectedLan]['_EDIT']}</Button>
+                        </td>
+                        <td>
+                            <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.deleteClickOpen(e, imagesource)}>{translations[this.state.selectedLan]['_DELETE']}</Button>
                         </td>
                     </tr>
                 )
@@ -230,12 +431,11 @@ class Content extends Component {
             // isBusyForLoadingProjects: false,
             currentPage: page,
         }, () => {
-            this.getImageSources();
+            this.getArticleSources();
         })
     }
 
     handleChangeRowsPerPage = event => {
-        // const { projects } = this.props;
         const totalElements = this.state;
         const rowsPerPage = event.target.value;
         const currentPage = (rowsPerPage >= totalElements)
@@ -246,109 +446,368 @@ class Content extends Component {
             currentPage: currentPage,
         },
             () => {
-                // this.handleChangePage(null, 0);
-                this.getImageSources();
+                this.getArticleSources();
             });
     };
-    getImageSources = () => {
+    getArticleSources = () => {
         const { currentPage, rowsPerPage } = this.state;
         var imagesource_temp = [];
         for (let i = currentPage * rowsPerPage; i < (currentPage + 1) * rowsPerPage; i++) {
-            if ((this.state.imagesourcesTotal)[i] !== undefined) {
-                imagesource_temp[i - currentPage * rowsPerPage] = (this.state.imagesourcesTotal)[i];
+            if ((this.state.articleDataTotal)[i] !== undefined) {
+                imagesource_temp[i - currentPage * rowsPerPage] = (this.state.articleDataTotal)[i];
             }
         }
         this.setState({
             imagesources: imagesource_temp,
         });
     }
-    onUsers(e) {
-        let path = `/photographer/apps/contacts/all`;
-        this.props.history.push(path);
-    };
-    onGalleries(e) {
-        let path = `/photographer/galleries`;
-        this.props.history.push(path);
-    };
-    onAddArticle() {
-
+    onAddArticle(e) {
+        this.setState({
+            openModal: true,
+            editArticle: false,
+        });
     }
     render() {
         const { classes } = this.props;
         const { currentPage, rowsPerPage, totalElements } = this.state;
-
         return (
             <FusePageSimple
                 classes={{
                     root: classes.layoutRoot
                 }}
                 content={
-                    <div className="p-24">
-                        <h1 style={{ textAlign: 'center' }}>Articles</h1>
+                    <div className="p-24" dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}>
+                        {(!this.state.openModal && !this.state.editArticle) && <h1 style={{ textAlign: 'center' }}>{translations[this.state.selectedLan]['_ARTICLES']}</h1>}
                         <br />
-                        <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onUsers(e)}><span style={{ color: 'blue', fontSize: 20 }}>Users/ </span></Button>
-                        <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onGalleries(e)}><span style={{ color: 'blue', fontSize: 20 }}>Galleries</span></Button>
                         <br />
-                        <div style={{ marginTop: 15, textAlign: 'right' }}>
+                        {(!this.state.openModal && !this.state.editArticle) && <div style={{ marginTop: 15, textAlign: 'right' }}>
                             <Button variant="contained" color="primary" className="w-224 mx-auto mt-16" aria-label="LOG IN"
                                 onClick={(e) => this.onAddArticle(e)} style={{ marginLeft: 20, marginRight: 20 }}>
-                                Add Article
+                                {translations[this.state.selectedLan]['_ADD_ARTICLE']}
                             </Button>
-                        </div>
+                        </div>}
                         <br />
+                        {this.state.openModal && <div>
+                            <h1 style={{ position: 'absolute', top: 30, right: '38vw' }}>{translations[this.state.selectedLan]['_CONTENT_MODAL_TITLE']}</h1>
+                            {this.state.selectedLan === '0' && <div style={{ marginBottom: 20, textAlign: "left" }}>
+                                <TextField
+                                    label={translations[this.state.selectedLan]['_TITLE']}
+                                    autoFocus
+                                    name="title"
+                                    value={this.state.title}
+                                    onChange={this.onChangeInput}
+                                    variant="outlined"
+                                    required
+                                    style={{ marginLeft: 0, marginRight: '2vw', width: 300, marginBottom: 10 }}
+                                />
+                                <TextField
+                                    style={{ marginLeft: '2vw', marginRight: '2vw', marginBottom: 10 }}
+                                    label={translations[this.state.selectedLan]['_DATE']}
+                                    name="dateTime"
+                                    type="date"
+                                    defaultValue={this.state.dateTime}
+                                    value={this.state.dateTime}
+                                    onChange={this.onChangeInput}
+                                    variant="outlined"
+                                    required
+                                />
+                                <FormControl className={classes.formControl} style={{ marginLeft: '3vw', marginRight: '3vw' }}>
+                                    <InputLabel htmlFor="grouped-native-select">{translations[this.state.selectedLan]['_STATUS']}</InputLabel>
+                                    <Select native defaultValue=""
+                                        input={<Input id="grouped-native-select"
+                                            name="status_b"
+                                            value={this.state.status_b}
+                                            onChange={this.onChangeInput}
+                                            variant="outlined"
+                                            style={{ width: 100 }}
+                                        />}>
+                                        <option value={0}>{translations[this.state.selectedLan]['_FALSE']}</option>
+                                        <option value={1}>{translations[this.state.selectedLan]['_TRUE']}</option>
+                                    </Select>
+                                </FormControl>
+                                <FormControl className={classes.formControl} style={{ marginLeft: '3vw', marginRight: '3vw' }}>
+                                    <InputLabel htmlFor="grouped-native-select_sticky">{translations[this.state.selectedLan]['_STICKY']}</InputLabel>
+                                    <Select native defaultValue=""
+                                        input={<Input id="grouped-native-select_sticky"
+                                            name="sticky"
+                                            value={this.state.sticky}
+                                            onChange={this.onChangeInput}
+                                            variant="outlined"
+                                            style={{ width: 100 }}
+                                        />}>
+                                        <option value={0}>{translations[this.state.selectedLan]['_FALSE']}</option>
+                                        <option value={1}>{translations[this.state.selectedLan]['_TRUE']}</option>
+                                    </Select>
+                                </FormControl>
+                            </div>}
+                            {this.state.selectedLan !== '0' && <div style={{ marginBottom: 20, textAlign: "right" }}>
+                                <TextField
+                                    label={translations[this.state.selectedLan]['_TITLE']}
+                                    autoFocus
+                                    name="title"
+                                    value={this.state.title}
+                                    onChange={this.onChangeInput}
+                                    variant="outlined"
+                                    required
+                                    style={{ marginLeft: '2vw', marginRight: 0, width: 300, marginBottom: 10 }}
+                                />
+                                <TextField
+                                    style={{ marginLeft: '2vw', marginRight: '2vw', marginBottom: 10 }}
+                                    label={translations[this.state.selectedLan]['_DATE']}
+                                    name="dateTime"
+                                    type="date"
+                                    defaultValue={this.state.dateTime}
+                                    value={this.state.dateTime}
+                                    onChange={this.onChangeInput}
+                                    variant="outlined"
+                                    required
+                                />
+                                <FormControl className={classes.formControl} style={{ marginLeft: '3vw', marginRight: '3vw' }}>
+                                    <InputLabel htmlFor="grouped-native-select">{translations[this.state.selectedLan]['_STATUS']}</InputLabel>
+                                    <Select native defaultValue=""
+                                        input={<Input id="grouped-native-select"
+                                            name="status_b"
+                                            value={this.state.status_b}
+                                            onChange={this.onChangeInput}
+                                            variant="outlined"
+                                            style={{ width: 100 }}
+                                        />}>
+                                        <option value={0}>{translations[this.state.selectedLan]['_FALSE']}</option>
+                                        <option value={1}>{translations[this.state.selectedLan]['_TRUE']}</option>
+                                    </Select>
+                                </FormControl>
+                                <FormControl className={classes.formControl} style={{ marginLeft: '3vw', marginRight: '3vw' }}>
+                                    <InputLabel htmlFor="grouped-native-select_sticky">{translations[this.state.selectedLan]['_STICKY']}</InputLabel>
+                                    <Select native defaultValue=""
+                                        input={<Input id="grouped-native-select_sticky"
+                                            name="sticky"
+                                            value={this.state.sticky}
+                                            onChange={this.onChangeInput}
+                                            variant="outlined"
+                                            style={{ width: 100 }}
+                                        />}>
+                                        <option value={0}>{translations[this.state.selectedLan]['_FALSE']}</option>
+                                        <option value={1}>{translations[this.state.selectedLan]['_TRUE']}</option>
+                                    </Select>
+                                </FormControl>
+                            </div>}
+                            <div style={{ direction: 'rtl' }}>
+                                <ReactQuill theme="snow" modules={this.modules}
+                                    style={{ height: '50vh' }}
+                                    formats={this.formats} onChange={this.rteChange}
+                                    value={this.state.content || ''} />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', marginTop: 70, marginBottom: 20, textAlign: 'left' }} className='MianImgMobile'>
+                                <Button variant="contained" color="primary" className="w-224 mx-auto mt-16" aria-label="LOG IN"
+                                    onClick={(e) => this.openFileDg(e)} style={{ width: 150, marginTop: 0, marginRight: 0, marginLeft: 0 }}>
+                                    {translations[this.state.selectedLan]['_MAIN_IMAGE']}
+                                </Button>
+                                <input id="myInput"
+                                    type="file"
+                                    ref={(ref) => this.uploadBtn = ref}
+                                    multiple
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => this.onChangeFile(e)}
+                                />
+                                <img src={this.state.tempFile} width="50" height="50" style={{ marginLeft: 20, marginRight: 20 }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <Button variant="contained" onClick={this.handleClose} color="primary" style={{ marginRight: 20, marginLeft: 20 }}>{translations[this.state.selectedLan]['_DISAGREE']}</Button>
+                                <Button variant="contained" onClick={this.handleOpen} color="primary" autoFocus>{translations[this.state.selectedLan]['_AGREE']}</Button>
+                            </div>
+                        </div>}
+                        {this.state.editArticle && <div>
+                            <h1 style={{ position: 'absolute', top: 30, right: '38vw' }}>{translations[this.state.selectedLan]['_EDIT_ARTICLE_INFO']}</h1>
+                            {this.state.selectedLan==='0'&& <div style={{ marginBottom: 20, textAlign: "left" }}>
+                                <TextField
+                                    label={translations[this.state.selectedLan]['_TITLE']}
+                                    autoFocus
+                                    name="title"
+                                    value={this.state.title}
+                                    onChange={this.onChangeInput}
+                                    variant="outlined"
+                                    required
+                                    style={{ marginLeft: 0, marginRight: '2vw', width: 300, marginBottom: 10 }}
+                                />
+                                <TextField
+                                    style={{ marginLeft: '2vw', marginRight: '2vw', marginBottom: 10 }}
+                                    label={translations[this.state.selectedLan]['_DATE']}
+                                    name="dateTime"
+                                    type="date"
+                                    defaultValue={this.state.dateTime}
+                                    value={this.state.dateTime}
+                                    onChange={this.onChangeInput}
+                                    variant="outlined"
+                                    required
+                                />
+                                <FormControl className={classes.formControl} style={{ marginLeft: '3vw', marginRight: '3vw' }}>
+                                    <InputLabel htmlFor="grouped-native-select">{translations[this.state.selectedLan]['_STATUS']}</InputLabel>
+                                    <Select native defaultValue=""
+                                        input={<Input id="grouped-native-select"
+                                            name="status_b"
+                                            value={this.state.status_b}
+                                            onChange={this.onChangeInput}
+                                            variant="outlined"
+                                            style={{ width: 100 }}
+                                        />}>
+                                        <option value={0}>{translations[this.state.selectedLan]['_FALSE']}</option>
+                                        <option value={1}>{translations[this.state.selectedLan]['_TRUE']}</option>
+                                    </Select>
+                                </FormControl>
+                                <FormControl className={classes.formControl} style={{ marginLeft: '3vw', marginRight: '3vw' }}>
+                                    <InputLabel htmlFor="grouped-native-select_sticky">{translations[this.state.selectedLan]['_STICKY']}</InputLabel>
+                                    <Select native defaultValue=""
+                                        input={<Input id="grouped-native-select_sticky"
+                                            name="sticky"
+                                            value={this.state.sticky}
+                                            onChange={this.onChangeInput}
+                                            variant="outlined"
+                                            style={{ width: 100 }}
+                                        />}>
+                                        <option value={0}>{translations[this.state.selectedLan]['_FALSE']}</option>
+                                        <option value={1}>{translations[this.state.selectedLan]['_TRUE']}</option>
+                                    </Select>
+                                </FormControl>
+                            </div>}
+                            {this.state.selectedLan!=='0'&& <div style={{ marginBottom: 20, textAlign: "right" }}>
+                                <TextField
+                                    label={translations[this.state.selectedLan]['_TITLE']}
+                                    autoFocus
+                                    name="title"
+                                    value={this.state.title}
+                                    onChange={this.onChangeInput}
+                                    variant="outlined"
+                                    required
+                                    style={{ marginRight: 0, marginLeft: '2vw', width: 300, marginBottom: 10 }}
+                                />
+                                <TextField
+                                    style={{ marginLeft: '2vw', marginRight: '2vw', marginBottom: 10 }}
+                                    label={translations[this.state.selectedLan]['_DATE']}
+                                    name="dateTime"
+                                    type="date"
+                                    defaultValue={this.state.dateTime}
+                                    value={this.state.dateTime}
+                                    onChange={this.onChangeInput}
+                                    variant="outlined"
+                                    required
+                                />
+                                <FormControl className={classes.formControl} style={{ marginLeft: '3vw', marginRight: '3vw' }}>
+                                    <InputLabel htmlFor="grouped-native-select">{translations[this.state.selectedLan]['_STATUS']}</InputLabel>
+                                    <Select native defaultValue=""
+                                        input={<Input id="grouped-native-select"
+                                            name="status_b"
+                                            value={this.state.status_b}
+                                            onChange={this.onChangeInput}
+                                            variant="outlined"
+                                            style={{ width: 100 }}
+                                        />}>
+                                        <option value={0}>{translations[this.state.selectedLan]['_FALSE']}</option>
+                                        <option value={1}>{translations[this.state.selectedLan]['_TRUE']}</option>
+                                    </Select>
+                                </FormControl>
+                                <FormControl className={classes.formControl} style={{ marginLeft: '3vw', marginRight: '3vw' }}>
+                                    <InputLabel htmlFor="grouped-native-select_sticky">{translations[this.state.selectedLan]['_STICKY']}</InputLabel>
+                                    <Select native defaultValue=""
+                                        input={<Input id="grouped-native-select_sticky"
+                                            name="sticky"
+                                            value={this.state.sticky}
+                                            onChange={this.onChangeInput}
+                                            variant="outlined"
+                                            style={{ width: 100 }}
+                                        />}>
+                                        <option value={0}>{translations[this.state.selectedLan]['_FALSE']}</option>
+                                        <option value={1}>{translations[this.state.selectedLan]['_TRUE']}</option>
+                                    </Select>
+                                </FormControl>
+                            </div>}
+                            <div>
+                                <ReactQuill theme="snow" modules={this.modules}
+                                    style={{ height: '50vh' }}
+                                    formats={this.formats} onChange={this.rteChange}
+                                    value={this.state.content || ''} />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', marginTop: 70, marginBottom: 20, textAlign: 'left' }} className='MianImgMobile'>
+                                <Button variant="contained" color="primary" className="w-224 mx-auto mt-16" aria-label="LOG IN"
+                                    onClick={(e) => this.openFileDg(e)} style={{ width: 150, marginTop: 0, marginRight: 0, marginLeft: 0 }}>
+                                    {translations[this.state.selectedLan]['_MAIN_IMAGE']}
+                                </Button>
+                                <input id="myInput"
+                                    type="file"
+                                    ref={(ref) => this.uploadBtn = ref}
+                                    multiple
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => this.onChangeFile(e)}
+                                />
+                                {this.state.tempFile !== null && <img src={this.state.tempFile} width="50" height="50" />}
+                                {this.state.tempFile === null && <img
+                                    src={"http://165.227.81.153:3005/uploads/articles/" + this.state.article_id + '/' + this.state.mainImage}
+                                    alt="new"
+                                    height="50" width="50"
+                                    style={{ marginRight: 20, marginLeft: 20 }}
+                                />}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <Button variant="contained" onClick={this.editClose} color="primary" style={{ marginRight: 20, marginLeft: 20 }}>{translations[this.state.selectedLan]['_DISAGREE']}</Button>
+                                <Button variant="contained" onClick={this.editOpen} color="primary" autoFocus>{translations[this.state.selectedLan]['_AGREE']}</Button>
+                            </div>
+                        </div>}
+
                         <br />
-                        <div>
-                            <table id='usersDatas'>
-                                {(this.state.usersDatas !== []) && this.state.isUploaded && <tbody>
-                                    <tr>
-                                        {/* ArticleId
-                                        ArticleTitle
-                                        ArticleContent
-                                        ArticleStatus
-                                        ArticleSticky
-                                        ArticleDateTime
-                                        ArticleMainImage */}
-                                        <th>No</th>
-                                        <th>Title</th>
-                                        <th>Content</th>
-                                        <th>Status</th>
-                                        <th>Sticky</th>
-                                        <th>DateTime</th>
-                                        <th>MainImage</th>
-                                        <th>Delete Image</th>
-                                    </tr>
-                                    {this.renderTableData()}
-                                </tbody>}
-                                {!this.state.isUploaded && <CircularProgress disableShrink />}
-                            </table>
-                        </div>
-                        <div>
-                            <TablePagination
-                                style={{ overflow: 'auto' }}
-                                rowsPerPageOptions={[5, 10, 20]}
-                                component="div"
-                                count={totalElements}
-                                rowsPerPage={rowsPerPage}
-                                page={currentPage}
-                                backIconButtonProps={{ 'aria-label': 'Previous Page' }}
-                                nextIconButtonProps={{ 'aria-label': 'Next Page' }}
-                                onChangePage={this.handleChangePage}
-                                onChangeRowsPerPage={this.handleChangeRowsPerPage}
-                            />
-                        </div>
+                        {
+                            !this.state.openModal && !this.state.editArticle && <div>
+                                <table id='usersDatas'>
+                                    {(this.state.usersDatas !== []) && this.state.isUploaded && <tbody>
+                                        <tr>
+                                            <th>{translations[this.state.selectedLan]['_NO']}</th>
+                                            <th>{translations[this.state.selectedLan]['_TITLE']}</th>
+                                            <th>{translations[this.state.selectedLan]['_STATUS']}</th>
+                                            <th>{translations[this.state.selectedLan]['_STICKY']}</th>
+                                            <th>{translations[this.state.selectedLan]['_DATE_TIME']}</th>
+                                            <th>{translations[this.state.selectedLan]['_MAIN_IMAGE']}</th>
+                                            <th>{translations[this.state.selectedLan]['_ADD_IMAGES']}</th>
+                                            <th>{translations[this.state.selectedLan]['_VIEW_IMAGES']}</th>
+                                            <th>{translations[this.state.selectedLan]['_EDIT']}</th>
+                                            <th>{translations[this.state.selectedLan]['_DELETE_ARTICLE']}</th>
+                                        </tr>
+                                        {this.renderTableData()}
+                                    </tbody>}
+                                    {!this.state.isUploaded && <CircularProgress disableShrink />}
+                                </table>
+                            </div>
+                        }
+                        {
+                            !this.state.openModal && !this.state.editArticle && <div>
+                                <TablePagination
+                                    dir='ltr'
+                                    style={this.state.selectedLan === '0' ? { overflow: 'auto' } : { overflow: 'auto', display: 'flex' }}
+                                    rowsPerPageOptions={[5, 10, 20]}
+                                    labelRowsPerPage=''
+                                    component="div"
+                                    count={totalElements}
+                                    rowsPerPage={rowsPerPage}
+                                    page={currentPage}
+                                    nextIconButtonProps={{ 'aria-label': 'Next Page' }}
+                                    backIconButtonProps={{ 'aria-label': 'Previous Page' }}
+                                    onChangePage={this.handleChangePage}
+                                    onChangeRowsPerPage={this.handleChangeRowsPerPage}
+                                />
+                            </div>
+                        }
+
                         <Dialog
-                            open={this.state.openModal}
-                            onClose={this.handleClose}
+                            open={this.state.openModalDeleteArticle}
+                            onClose={this.deleteClose}
                             aria-labelledby="alert-dialog-title"
                             aria-describedby="alert-dialog-description"
+                            dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}
                         >
-                            <DialogTitle id="alert-dialog-title">{"Are you sure want to delete this image?"}</DialogTitle>
+                            <DialogTitle id="alert-dialog-title">{translations[this.state.selectedLan]['_ARTICLE_DELETE']}</DialogTitle>
                             <DialogActions>
-                                <Button onClick={this.handleClose} color="primary">
-                                    Disagree
+                                <Button onClick={this.deleteClose} color="primary">
+                                    {translations[this.state.selectedLan]['_DISAGREE']}
                                 </Button>
-                                <Button onClick={this.handleOpen} color="primary" autoFocus>
-                                    Agree
+                                <Button onClick={this.deleteOpen} color="primary" autoFocus>
+                                    {translations[this.state.selectedLan]['_AGREE']}
                                 </Button>
                             </DialogActions>
                         </Dialog>
@@ -358,6 +817,5 @@ class Content extends Component {
         )
     }
 }
-// export default (withRouter(Example));
-// export default (withRouter(withStyles(styles, {withTheme: true })(Example)));
+
 export default withStyles(styles, { withTheme: true })(withRouter(Content));

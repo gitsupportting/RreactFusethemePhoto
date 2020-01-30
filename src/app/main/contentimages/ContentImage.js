@@ -6,15 +6,12 @@ import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import TablePagination from '@material-ui/core/TablePagination';
-import CircularProgress from '@material-ui/core/CircularProgress';
 import { withRouter } from 'react-router-dom';
 import axios from 'axios'
 import './tableStyle.css'
-import translations from './../../main/multiLan';
+import translations from '../multiLan';
 
 let token;
-var user_id, user_name;
-var GalleryName, gallery_id;
 const styles = theme => ({
     root: {
         width: '100%',
@@ -25,55 +22,35 @@ const styles = theme => ({
         paddingLeft: theme.spacing.unit * 4,
     },
 });
-class Image extends Component {
+class ContentImage extends Component {
     constructor(props) {
         super(props)
         this.state = {
-            selectedContactsMenu: null,
-            data: null,
-            fullscreen: false,
-            loading: false,
-            imageFile: null,
-            imageFileName: '',
-            Islogged: false,
             imagesources: [],
             imagesourcesTotal: [],
-            AddGalleryName: '',
-            GalleryNames: [],
-            GalleryIds: [],
-            DeleteGalleryName: '',
             rowsPerPage: 10,
             currentPage: 0,
             totalElements: 10,
             openModal: false,
-            open: true,
-            isUploaded: true,
-            imageStatus: 0,
-            filterImageFlag: false,
         }
-        // this.uploadBtn = React.createRef();
-        //
-        this.openFileDg = this.openFileDg.bind(this);
-        this.onChangeFile = this.onChangeFile.bind(this);
         this.handleClickOpen = this.handleClickOpen.bind(this);
         this.handleClose = this.handleClose.bind(this);
         this.handleOpen = this.handleOpen.bind(this);
     }
     componentWillMount() {
         var selectedLan = localStorage.getItem('language');
-        this.setState({ selectedLan: selectedLan });
+        this.setState({
+            selectedLan: selectedLan,
+        });
     }
     componentDidMount() {
-        user_id = localStorage.getItem('user_id') || ''
-        user_name = localStorage.getItem('user_name') || ''
-        GalleryName = localStorage.getItem('GalleryName') || ''
-        gallery_id = localStorage.getItem('gallery_id') || ''
-        this.setState({
-            GalleryName: GalleryName,
-            gallery_id: gallery_id,
-            user_name: user_name,
-        })
         token = localStorage.getItem('token') || ''
+        var article_id = localStorage.getItem('article_id') || ''
+        var title = localStorage.getItem('title') || ''
+        this.setState({
+            article_id: article_id,
+            title: title,
+        })
         this.uploadImage();
     }
 
@@ -85,7 +62,7 @@ class Image extends Component {
                 'Content-Type': 'application/x-www-form-urlencoded'
             }
         };
-        const url = `http://165.227.81.153:3005/files/images`
+        const url = `http://165.227.81.153:3005/getdata/articleImages`
         axios.get(
             url,
             options
@@ -99,22 +76,12 @@ class Image extends Component {
                 if (usersDatas.length > 0) {
                     var imagesource_temp = [];
                     let j = 0;
-                    if (this.state.filterImageFlag === false) {
-                        for (let i = 0; i < usersDatas.length; i++) {
-                            if ((usersDatas[i].user_id === user_id) && (usersDatas[i].gallery_id === this.state.gallery_id)) {
-                                imagesource_temp[j] = usersDatas[i].filename;
-                                j = j + 1;
-                            }
-                        }
-                    } else {
-                        for (let i = 0; i < usersDatas.length; i++) {
-                            if ((usersDatas[i].user_id === user_id) && (usersDatas[i].gallery_id === this.state.gallery_id) && (usersDatas[i].imageStatus === '1')) {
-                                imagesource_temp[j] = usersDatas[i].filename;
-                                j = j + 1;
-                            }
+                    for (let i = 0; i < usersDatas.length; i++) {
+                        if (usersDatas[i].article_id === this.state.article_id) {
+                            imagesource_temp[j] = usersDatas[i].filename;
+                            j = j + 1;
                         }
                     }
-
                     if (imagesource_temp.length > 0) {
                         this.setState({
                             imagesourcesTotal: imagesource_temp,
@@ -130,52 +97,10 @@ class Image extends Component {
                         imagesourcesTotal: []
                     })
                 }
-                this.setState({
-                    isUploaded: true,
-                })
             })
         setTimeout(() => {
             this.getImageSources();
         }, 2000);
-    }
-
-    openFileDg(e) {
-        this.uploadBtn.click();
-    }
-
-    onChangeFile(e, user_id) {
-        this.setState({
-            isUploaded: false,
-        })
-        for (let i = 0; i < (e.target.files).length; i++) {
-            let imageFile = e.target.files[i];
-            let imageFileName = e.target.files[i].name;
-            let formdata = new FormData();
-            formdata.set('user_id', user_id);
-            formdata.set('GalleryName', this.state.GalleryName);
-            formdata.set('gallery_id', this.state.gallery_id);
-            formdata.set('imageStatus', this.state.imageStatus);
-            formdata.append('file', imageFile);
-            const url = 'http://165.227.81.153:3005/files/' + imageFileName;
-            const options = {
-                headers: {
-                    'x-pos-user-token': token,
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            };
-            axios.post(
-                url,
-                formdata,
-                options
-            )
-                .then((response) => {
-                    if (response.data === 'Invalid token') {
-                        let path = `/photographer/login`;
-                        this.props.history.push(path);
-                    }
-                    this.uploadImage();
-                })
-        }
     }
 
     handleClickOpen(e, imagesource) {
@@ -191,7 +116,7 @@ class Image extends Component {
         });
     };
     handleOpen() {
-        const url = 'http://165.227.81.153:3005/getdata/deleteImage';
+        const url = 'http://165.227.81.153:3005/getdata/deleteArticleImage';
         token = localStorage.getItem('token') || ''
         const headers = {
             'Content-Type': 'application/json',
@@ -201,9 +126,7 @@ class Image extends Component {
         axios.post(
             url,
             {
-                user_id: user_id,
-                GalleryName: this.state.GalleryName,
-                gallery_id: this.state.gallery_id,
+                article_id: this.state.article_id,
                 filename: imagesource,
             },
             { headers: headers }
@@ -234,7 +157,7 @@ class Image extends Component {
                         <td>{imagesource}</td>
                         <td>
                             <img
-                                src={"http://165.227.81.153:3005/uploads/" + user_id + '/' + this.state.gallery_id + '/' + imagesource}
+                                src={"http://165.227.81.153:3005/uploads/articles/" + this.state.article_id + '/' + imagesource}
                                 alt="new"
                                 height="42" width="42"
                             />
@@ -250,7 +173,6 @@ class Image extends Component {
     }
     handleChangePage = async (event, page) => {
         this.setState({
-            // isBusyForLoadingProjects: false,
             currentPage: page,
         }, () => {
             this.getImageSources();
@@ -258,7 +180,6 @@ class Image extends Component {
     }
 
     handleChangeRowsPerPage = event => {
-        // const { projects } = this.props;
         const totalElements = this.state;
         const rowsPerPage = event.target.value;
         const currentPage = (rowsPerPage >= totalElements)
@@ -269,7 +190,6 @@ class Image extends Component {
             currentPage: currentPage,
         },
             () => {
-                // this.handleChangePage(null, 0);
                 this.getImageSources();
             });
     };
@@ -285,25 +205,12 @@ class Image extends Component {
             imagesources: imagesource_temp,
         });
     }
-    onUsers(e) {
-        let path = `/photographer/apps/contacts/all`;
+    onContents(e) {
+        let path = `/photographer/contents`;
         this.props.history.push(path);
     };
-    onGalleries(e) {
-        let path = `/photographer/galleries`;
-        this.props.history.push(path);
-    };
-    filterImage = () => {
-        this.setState({ filterImageFlag: true }, () => {
-            this.uploadImage();
-        });
-        this.uploadImage();
-    }
-    allImage = () => {
-        this.setState({ filterImageFlag: false }, () => {
-            this.uploadImage();
-        });
-    }
+
+
     render() {
         const { classes } = this.props;
         const { currentPage, rowsPerPage, totalElements } = this.state;
@@ -313,47 +220,17 @@ class Image extends Component {
                 classes={{
                     root: classes.layoutRoot
                 }}
-                // header={
-                // <div className="p-24"><h1>{this.state.user_name} {this.state.GalleryName}</h1></div>
-                // }
-                // contentToolbar={
-                //     <div className="px-24"><h4>{this.state.user_name} {this.state.GalleryName}</h4></div>
-                // }
                 content={
                     <div className="p-24" dir={this.state.selectedLan === '0' ? 'ltr' : 'rtl'}>
-                        <h1 style={{ textAlign: 'center' }}>{this.state.user_name}>{this.state.GalleryName}</h1>
+                        <h1 style={{ textAlign: 'center' }}>{this.state.title}</h1>
                         <br />
-                        <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onUsers(e)}><span style={{ color: 'blue', fontSize: 20 }}>{translations[this.state.selectedLan]['_USERS']}/ </span></Button>
-                        <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onGalleries(e)}><span style={{ color: 'blue', fontSize: 20 }}>{translations[this.state.selectedLan]['_GALLERIES']}</span></Button>
-                        <br />
-                        <div style={{ marginTop: 15, textAlign: 'right' }}>
-                            <Button variant="contained" color="primary" className="w-224 mx-auto mt-16" aria-label="LOG IN"
-                                onClick={(e) => this.filterImage(e)} style={{ marginLeft: 20, marginRight: 20 }}>
-                                {translations[this.state.selectedLan]['_FILTER']}
-                            </Button>
-                            <Button variant="contained" color="primary" className="w-224 mx-auto mt-16" aria-label="LOG IN"
-                                onClick={(e) => this.allImage(e)} style={{ marginLeft: 20, marginRight: 20 }}>
-                                {translations[this.state.selectedLan]['_SHOW_ALL']}
-                            </Button>
-                            <Button variant="contained" color="primary" className="w-224 mx-auto mt-16" aria-label="LOG IN"
-                                onClick={(e) => this.openFileDg(e)} style={{ marginLeft: 20, marginRight: 20 }}>
-                                {translations[this.state.selectedLan]['_ADD_IMAGES']}
-                            </Button>
-                            <input id="myInput"
-                                type="file"
-                                ref={(ref) => this.uploadBtn = ref}
-                                multiple
-                                // ref={(ref) => this.uploadBtn = ref}
-                                style={{ display: 'none' }}
-                                onChange={(e) => this.onChangeFile(e, user_id)}
-                            />
-                        </div>
+                        <Button class="toggle-button" id="centered-toggle-button" onClick={(e) => this.onContents(e)}><span style={{ color: 'blue', fontSize: 20 }}>{translations[this.state.selectedLan]['_ARTICLES']}</span></Button>
                         <br />
                         <br />
-                        {/* <DemoContent/> */}
+                        <br />
                         <div>
                             <table id='usersDatas'>
-                                {(this.state.usersDatas !== []) && this.state.isUploaded && <tbody>
+                                {(this.state.usersDatas !== []) && <tbody>
                                     <tr>
                                         <th>{translations[this.state.selectedLan]['_NO']}</th>
                                         <th>{translations[this.state.selectedLan]['_FILE_NAME']}</th>
@@ -362,7 +239,6 @@ class Image extends Component {
                                     </tr>
                                     {this.renderTableData()}
                                 </tbody>}
-                                {!this.state.isUploaded && <CircularProgress disableShrink />}
                             </table>
                         </div>
                         <div>
@@ -404,6 +280,4 @@ class Image extends Component {
         )
     }
 }
-// export default (withRouter(Example));
-// export default (withRouter(withStyles(styles, {withTheme: true })(Example)));
-export default withStyles(styles, { withTheme: true })(withRouter(Image));
+export default withStyles(styles, { withTheme: true })(withRouter(ContentImage));

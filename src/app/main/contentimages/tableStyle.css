@@ -27,32 +27,3 @@
     background-color: #202020;
     color: white;
 }
-.ql-container {
-    min-height: 10em;
-    border-bottom-left-radius: 0.5em;
-    border-bottom-right-radius: 0.5em;
-    background: #fefcfc;
-    display: flex;
-}
-
-.ql-toolbar {
-    background: #eaecec;
-    border-top-left-radius: 0.5em;
-    border-top-right-radius: 0.5em;
-    border-bottom: none;
-    display: flex;
-}
-.ql-snow .ql-picker:not(.ql-color-picker):not(.ql-icon-picker) svg {
-    position: absolute;
-    margin-top: -9px;
-    right: auto !important;
-    top: 50%;
-    width: 18px;
-}
-
-@media (max-width: 479px) {
-    .MianImgMobile{
-        margin-top: 100px !important;
-    }
- }
-
