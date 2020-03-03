@@ -7,6 +7,7 @@ const translations = {
         /////////login screen
         '_LOGIN_TO_YOUR_ACCOUNT': 'LOGIN TO YOUR ACCOUNT',
         '_EMAIL': 'Email',
+        '_PHONE':'Phone',
         '_PASSWORD': 'Password',
         '_LOGIN': 'LOGIN',
         '_CREATE_AN_ACCOUNT': 'Create an account',
@@ -64,7 +65,7 @@ const translations = {
         '_AGREE': 'Agree',
         '_ARTICLE_DELETE': 'Are you sure want to delete this article?',
         '_VIEW_IMAGES': 'View Images',
-
+        '_ABOUT':'Set as about',
     },
     '1': {
         //////////Top and Sidebar
@@ -74,6 +75,7 @@ const translations = {
         /////////login screen
         '_LOGIN_TO_YOUR_ACCOUNT': 'התחבר לחשבונך',
         '_EMAIL': 'אימייל',
+        '_PHONE':'מכשיר טלפון',
         '_PASSWORD': 'סיסמה',
         '_LOGIN': 'התחברות',
         '_CREATE_AN_ACCOUNT': 'צור חשבון',
@@ -130,6 +132,7 @@ const translations = {
         '_AGREE': 'מסכים',
         '_ARTICLE_DELETE': 'האם אתה בטוח שברצונך למחוק מאמר זה?',
         '_VIEW_IMAGES': 'צפו בתמונות',
+        '_ABOUT':'הגדר כאמור',
     },
     '2': {
         //////////Top and Sidebar
@@ -139,6 +142,7 @@ const translations = {
         /////////login screen
         '_LOGIN_TO_YOUR_ACCOUNT': 'تسجيل الدخول إلى حسابك',
         '_EMAIL': 'البريد الإلكتروني',
+        '_PHONE':'هاتف',
         '_PASSWORD': 'كلمه السر',
         '_LOGIN': 'تسجيل الدخول',
         '_CREATE_AN_ACCOUNT': 'انشاء حساب',
@@ -195,6 +199,7 @@ const translations = {
         '_AGREE': 'موافق',
         '_ARTICLE_DELETE': 'هل تريد بالتأكيد حذف هذه المقالة؟',
         '_VIEW_IMAGES': 'عرض الصور',
+        '_ABOUT':'تعيين كما هو',
     }
 }
 
